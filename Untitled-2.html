@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang=""""en"""">
+<head>
+  <meta charset=""""utf-8"""">
+  <meta name=""""viewport"""" content=""""width=device-width,initial-scale=1"""">
+  <title>Hannah's Hello Kitty Arcade</title>
+
+  <!-- --- Styles for the page --- -->
+  <style>
+    /* Accent color used for highlights */
+    :root { --accent: #ff6fa3 }
+
+    /* Reset body margin, set font, background gradient, center content */
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: linear-gradient(180deg, #fff, #f7f0f8);
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* The main menu container */
+    .menu {
+      width: 100%;
+      max-width: 900px;
+      padding: 24px;
+      background: #fff;
+      border: none;
+      text-align: center;
+    }
+
+    /* Title styling */
+    h1 {
+      /* missing font-size, could add: font-size: 2em; */
+      margin: 0 0 1px;
+      color: #333;
+    }
+
+    /* Subtitle/lead paragraph styling */
+    p.lead {
+      margin: 0 0 18px;
+      color: #666;
+    }
+
+    /* Container for game buttons */
+    .choices {
+      display: flex;
+      gap: 14px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Each game card */
+    .card {
+      width: 260px;
+      text-align: center;
+      cursor: pointer;
+      padding: 8px;
+      border: none;
+      background-color: transparent;
+    }
+
+    .card img {
+      width: 240px;
+      height: 160px;
+      object-fit: cover;
+      border: none;
+    }
+
+    /* Hover effect on game image */
+    .card:hover img {
+      transform: translateY(-6px);
+      border: none;
+    }
+
+    /* Card text styles */
+    .card .title {
+      font-weight: 700;
+      margin-top: 10px;
+    }
+
+    .card .desc {
+      color: #666;
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    /* Back button, initially hidden */
+    button.back {
+      position: fixed;
+      left: 14px;
+      top: 80px;
+      padding: 10px 14px;
+      border: none;
+      cursor: pointer;
+      display: none;
+    }
+
+    /* iframe for running games, initially hidden */
+    iframe.player {
+      width: 100vw;
+      height: 100vh;
+      border: 0;
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Back button to return to menu -->
+  <button class=""""back"""" id=""""backBtn"""">← Back</button>
+
+  <!-- Main menu -->
+  <div class=""""menu"""" id=""""menu"""">
+    <h2>Welcome to</h2>
+    <h1>Hannah's Hello Kitty Arcade</h1>
+    <p class=""""lead"""">Choose a game:</p>
+
+    <!-- Game choices -->
+    <div class=""""choices"""">
+      <button class=""""card"""" id=""""playPong"""">
+        <img src=""""images/pong.png"""" alt=""""Pong"""">
+        <div class=""""title"""">Pong</div>
+      </button>
+
+      <button class=""""card"""" id=""""playBandB"""">
+        <img src=""""images/bowsbombs.png"""" alt=""""Bows & Bombs"""">
+        <div class=""""title"""">Bows & Bombs</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Game iframe -->
+  <iframe id=""""playerFrame"""" class=""""player"""" sandbox=""""allow-same-origin allow-scripts allow-forms""""></iframe>
+
+  <!-- --- JavaScript to handle game loading --- -->
+  <script>
+    // DOM elements
+    const menu = document.getElementById('menu');
+    const backBtn = document.getElementById('backBtn');
+    const iframe = document.getElementById('playerFrame');
+
+    // Function to open a game in iframe
+    function openGame(path){
+      menu.style.display = 'none';          // hide menu
+      iframe.style.display = 'block';       // show iframe
+      backBtn.style.display = 'inline-block'; // show back button
+      iframe.src = path;                     // load game URL
+      window.scrollTo(0,0);                 // scroll to top
+    }
+
+    // Event listeners for game buttons
+    document.getElementById('playPong').addEventListener('click', () => openGame('pong/index.html'));
+    document.getElementById('playBandB').addEventListener('click', () => openGame('bandb/index.html'));
+
+    // Back button resets the view to menu
+    backBtn.addEventListener('click', () => {
+      iframe.src = 'about:blank';   // clear game
+      iframe.style.display = 'none';
+      backBtn.style.display = 'none';
+      menu.style.display = 'block'; // show menu
+      window.scrollTo(0,0);
+    });
+  </script>
+</body>
+</html>

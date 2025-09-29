@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Hello Kitty Greeting</title>
+<style>
+body {
+  margin:0;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  min-height:100vh;
+  background: #ffe6f2;
+  font-family: "Comic Sans MS", system-ui, Arial, sans-serif;
+}
+.kitty-container {
+  position: relative;
+  display: inline-block;
+}
+#kitty {
+  max-width: 300px;
+  cursor: pointer;
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.15);
+}
+.speech-bubble {
+  position: absolute;
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff0f6;
+  color: #ff3399;
+  padding: 12px 20px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 1.2rem;
+  text-align: center;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+}
+.speech-bubble::after {
+  content: "";
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 15px;
+  border-style: solid;
+  border-color: #fff0f6 transparent transparent transparent;
+}
+</style>
+</head>
+<body>
+
+<div class="kitty-container">
+  <img id="kitty" src="hello-kitty.png" alt="Hello Kitty">
+  <div class="speech-bubble" id="bubble">Have a good day!</div>
+</div>
+
+</body>
+</html>

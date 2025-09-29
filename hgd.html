@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Hello Kitty Market + Ngram</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+<style>
+:root{
+  --pink:#ffe6f2; --accent:#ff3399; --card:#fff0f6;
+}
+body{
+  margin:0;
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--pink);
+  font-family: "Comic Sans MS", system-ui, -apple-system, "Helvetica Neue", Arial;
+}
+#kitty{
+  cursor:pointer;
+  max-width:300px;
+  border-radius:14px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.15);
+}
+.popup{
+  position:fixed; inset:0;
+  display:none;
+  align-items:center; justify-content:center;
+  background: rgba(255,182,193,0.96);
+  z-index:1000;
+  padding:20px;
+  box-sizing:border-box;
+  flex-direction:column;
+}
+.panel{
+  width:100%;
+  max-width:920px;
+  display:flex;
+  gap:18px;
+  align-items:flex-start;
+  justify-content:space-between;
+  flex-wrap:wrap;
+}
+.title{
+  width:100%;
+  text-align:center;
+  color:var(--accent);
+  font-size:2.2rem;
+  text-shadow:1px 1px #fff;
+  margin-bottom:6px;
+}
+.card{
+  background:var(--card);
+  border-radius:14px;
+  padding:12px;
+  box-shadow:0 6px 18px rgba(0,0,0,0.12);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:8px;
+}
+.character{
+  width:calc(50% - 12px);
+  min-width:260px;
+  text-align:center;
+}
+.character img{ max-width:140px; user-select:none; pointer-events:none;}
+.fact, .market{
+  padding:10px 14px;
+  border-radius:10px;
+  background:white;
+  font-size:1rem;
+  min-height:46px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.ticker{
+  width:100%;
+  display:flex;
+  gap:8px;
+  justify-content:center;
+  flex-wrap:wrap;
+}
+.ticker-item{
+  background:white;
+  padding:8px 10px;
+  border-radius:10px;
+  min-width:120px;
+  text-align:center;
+  box-shadow:0 2px 8px rgba(0,0,0,0.08);
+}
+.price-up{ color: #0a8a2f; }
+.price-down{ color: #c62828; }
+.close-btn{
+  margin-top:14px;
+  background:#ff99cc;
+  border:none;
+  padding:10px 18px;
+  border-radius:18px;
+  color:white;
+  font-size:16px;
+  cursor:pointer;
+  box-shadow:0 6px 18px rgba(0,0,0,0.12);
+}
+.small{ font-size:0.9rem; color:#333; }
+@media (max-width:700px){
+  .character{ width:100%; }
+  .panel{ gap:12px; padding:6px;}
+}
+</style>
+</head>
+<body>
+
+<img id="kitty" src="images/hello-kitty.png" alt="Hello Kitty">
+
+<div id="popup" class="popup" role="dialog" aria-hidden="true">
+  <div class="title">💖 Hello Kitty Presents: Kuromi & Labubu Market 💖</div>
+
+  <div class="panel">
+    <!-- Kuromi Fun Facts -->
+    <div class="card character">
+      <img src="kuromi.png" alt="Kuromi">
+      <div class="fact small" id="kuromiFact">Kuromi will share a fun fact!</div>
+      <button id="nextFact" class="close-btn" style="margin-top:10px;">Next Fact</button>
+    </div>
+
+    <!-- Labubu Fake Market + Ngram Chart -->
+    <div class="card character">
+      <img src="labubu.png" alt="Labubu">
+      <div class="small" style="margin-bottom:6px;">Snack Words Ngram Viewer & Fake Market</div>
+
+      <!-- Fake tickers -->
+      <div class="ticker" id="fakeTicker"></div>
+
+      <!-- Mini price chart -->
+      <canvas id="miniChart" width="300" height="80" style="max-width:100%; margin-top:6px;"></canvas>
+
+      <!-- Word search input -->
+      <div style="margin-top:12px; text-align:center;">
+        <input id="wordInput" type="text" placeholder="Enter a word..." style="padding:6px 10px; border-radius:6px;">
+        <button id="plotWord" class="close-btn" style="padding:6px 12px;">Plot</button>
+      </div>
+
+      <!-- Ngram chart -->
+      <canvas id="ngramChart" width="300" height="200" style="max-width:100%; margin-top:12px;"></canvas>
+    </div>
+  </div>
+
+  <button id="closePopup" class="close-btn" style="margin-top:18px;">Close</button>
+</div>
+
+<script>
+// ------------------ Fun facts ------------------
+const kuromiFactEl = document.getElementById('kuromiFact');
+const nextFactBtn = document.getElementById('nextFact');
+const funFacts = [
+  "Kuromi loves punk rock music 🎸",
+  "Kuromi’s birthday is October 31st 🎃",
+  "Kuromi writes in her diary ✍️",
+  "Kuromi’s favorite snack is chocolate 🍫",
+  "Kuromi once tried to run a cat cafe ☕🐱"
+];
+let lastFactIdx=-1;
+function nextFact(){
+  let idx=Math.floor(Math.random()*funFacts.length);
+  if(idx===lastFactIdx) idx=(idx+1)%funFacts.length;
+  lastFactIdx=idx;
+  kuromiFactEl.textContent=funFacts[idx];
+}
+nextFactBtn.addEventListener('click',nextFact);
+
+// ------------------ Fake Market ------------------
+const fakeTickerEl = document.getElementById('fakeTicker');
+const fakeProducts = [
+  {symbol: "CHESTERS", name: "Chester's Hot Fries"},
+  {symbol: "TAKIS", name: "Takis Spicy"},
+  {symbol: "HOTNUG", name: "Hot Nuggets Co."}
+];
+function initFakeTicker(){
+  fakeTickerEl.innerHTML = '';
+  fakeProducts.forEach(p=>{
+    const div=document.createElement('div');
+    div.className='ticker-item';
+    div.id=`tick-${p.symbol}`;
+    div.innerHTML=`<div style="font-weight:700">${p.symbol}</div>
+                   <div class="small" id="${p.symbol}-price">--</div>
+                   <div class="small" id="${p.symbol}-chg">--</div>`;
+    fakeTickerEl.appendChild(div);
+  });
+}
+function randomPrice(base,volatility=0.02){
+  const pct=(Math.random()*2-1)*volatility;
+  const next=+(base*(1+pct)).toFixed(2);
+  return {price:next,pct:+(pct*100).toFixed(2)};
+}
+let miniChart=null;
+function createMiniChart(points){
+  const ctx=document.getElementById('miniChart').getContext('2d');
+  if(miniChart) miniChart.destroy();
+  miniChart=new Chart(ctx,{
+    type:'line',
+    data:{ labels:points.map((_,i)=>i), datasets:[{data:points,borderWidth:1,pointRadius:0,tension:0.3,fill:true,backgroundColor:'rgba(255,255,255,0.6)'}] },
+    options:{animation:false,plugins:{legend:{display:false}},scales:{ x:{display:false}, y:{display:false} }, elements:{ line:{borderColor:'#ff66aa'}} }
+  });
+}
+function updateFakeMarket(){
+  fakeProducts.forEach(p=>{
+    if(!p.base)p.base=+(Math.random()*10+3).toFixed(2);
+    const r=randomPrice(p.base,0.06); p.base=r.price;
+    const priceEl=document.getElementById(`${p.symbol}-price`);
+    const chgEl=document.getElementById(`${p.symbol}-chg`);
+    if(priceEl) priceEl.textContent=`$${r.price.toFixed(2)}`;
+    if(chgEl){ chgEl.textContent=`${r.pct}%`; chgEl.className=r.pct>=0?'price-up small':'price-down small'; }
+  });
+  const points=Array.from({length:15},(_,i)=>{
+    const base=fakeProducts[0].base||5;
+    const noise=(Math.sin(i/2+Math.random())+Math.random()*0.6)*0.2;
+    return +(base+noise).toFixed(2);
+  });
+  createMiniChart(points);
+}
+initFakeTicker();
+
+// ------------------ Ngram Chart ------------------
+const ngramCtx = document.getElementById('ngramChart').getContext('2d');
+const years = Array.from({length:100},(_,i)=>1925+i);
+const ngramData = {
+  "Takis": years.map(()=>Math.floor(Math.random()*30)),
+  "Chester's Hot Fries": years.map(()=>Math.floor(Math.random()*25)),
+  "Hot Nuggets": years.map(()=>Math.floor(Math.random()*20))
+};
+const events = {
+  2000: "Y2K bug scare",
+  2001: "Wikipedia launches",
+  2004: "Facebook founded",
+  2010: "Instagram launches",
+  2019: "First image of a black hole"
+};
+let ngramChart = new Chart(ngramCtx,{
+  type:'line',
+  data:{ labels: years, datasets:[] },
+  options:{
+    responsive:true,
+    plugins:{
+      legend:{display:true},
+      datalabels:{
+        display: ctx=>{
+          const dataset=ctx.dataset.data;
+          return ctx.dataIndex===dataset.indexOf(Math.max(...dataset));
+        },
+        align:'top',
+        formatter:(value,ctx)=>{
+          const year=ctx.chart.data.labels[ctx.dataIndex];
+          const event=events[year]||'';
+          return `${year}\n${event}`;
+        },
+        font:{weight:'bold',size:10},
+        color:'#333'
+      }
+    },
+    scales:{
+      x:{title:{display:true,text:'Year'}},
+      y:{title:{display:true,text:'Frequency'}, beginAtZero:true}
+    }
+  },
+  plugins:[ChartDataLabels]
+});
+
+// Search and plot
+document.getElementById('plotWord').addEventListener('click',()=>{
+  const word = document.getElementById('wordInput').value.trim();
+  if(!word) return alert("Enter a word!");
+  let data = ngramData[word];
+  if(!data){
+    data = years.map(()=>Math.floor(Math.random()*30)); // fake
+    ngramData[word]=data;
+  }
+  ngramChart.data.datasets=[{
+    label: word,
+    data: data,
+    borderColor:'#ff33cc',
+    fill:false,
+    tension:0.3,
+    pointRadius:2
+  }];
+  ngramChart.update();
+});
+
+// ------------------ Popup ------------------
+const kitty = document.getElementById('kitty');
+const popup = document.getElementById('popup');
+const closePopup = document.getElementById('closePopup');
+
+kitty.addEventListener('click',()=>{
+  popup.style.display='flex';
+  popup.setAttribute('aria-hidden','false');
+  nextFact();
+  updateFakeMarket();
+  if(window._fakeInterval) clearInterval(window._fakeInterval);
+  window._fakeInterval=setInterval(updateFakeMarket,3000);
+});
+
+closePopup.addEventListener('click',()=>{
+  popup.style.display='none';
+  popup.setAttribute('aria-hidden','true');
+  if(window._fakeInterval) clearInterval(window._fakeInterval);
+});
+
+popup.addEventListener('click',(e)=>{
+  if(e.target===popup){
+    popup.style.display='none';
+    if(window._fakeInterval) clearInterval(window._fakeInterval);
+  }
+});
+</script>
+
+</body>
+</html>

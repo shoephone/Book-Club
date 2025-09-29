@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hannah's Hello Kitty Arcade</title>
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="images/favicon.png">
+
+<!-- Press Start 2P font -->
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --accent: #ff6fa3;
+}
+
+/* General body */
+body {
+  margin: 0;
+  font-family: 'Press Start 2P', cursive;
+  background: #000;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow-x: hidden;
+}
+
+/* Menu container */
+.menu {
+  width: 100%;
+  max-width: 1200px;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 16px;
+  position: relative;
+}
+
+/* Logo wrapper */
+.logo-wrapper {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  transition: all 1s ease;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.logo-wrapper.to-top {
+  top: 20px;
+  transform: translateX(-50%) scale(0.8);
+}
+
+/* Logo video / image */
+.logo-video, .logo-img {
+  height: 50vh; /* starting size large */
+  max-height: 80vh;
+  width: auto;
+}
+
+.logo-wrapper.to-top .logo-video,
+.logo-wrapper.to-top .logo-img {
+  height: 25vh; /* shrinks on top */
+  max-height: 150px;
+}
+
+.logo-img {
+  display: none;
+}
+
+/* Typing effect */
+.lead {
+  margin-top: 20px;
+  color: var(--accent);
+  font-size: clamp(0.8rem, 2vw, 1rem);
+  min-height: 1.5em;
+  white-space: nowrap;
+  overflow: hidden;
+  border-right: 2px solid var(--accent);
+  visibility: hidden;
+}
+
+/* Cards container */
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 20px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.choices.show {
+  opacity: 1;
+}
+
+/* Card styling */
+.card {
+  flex: 1 1 200px;
+  max-width: 220px;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  border: none;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+  transition: transform 0.2s ease, opacity 0.6s;
+}
+
+.card.show {
+  opacity: 1;
+}
+
+.card img, .card video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  background: #111;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  border: 2px solid var(--accent);
+}
+
+/* Back button */
+button.back {
+  position: fixed;
+  left: 10px;
+  top: 10px;
+  padding: 8px 12px;
+  border: none;
+  cursor: pointer;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  display: none;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 0.8rem;
+  z-index: 20;
+}
+
+/* Game iframe */
+iframe.player {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  left: env(safe-area-inset-left, 0px);
+  width: calc(100vw - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+  height: calc(100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  border: 0;
+  display: none;
+  background: #000;
+  z-index: 999;
+}
+
+/* Small screens */
+@media (max-height: 500px) {
+  .logo-wrapper.to-top .logo-video,
+  .logo-wrapper.to-top .logo-img {
+    height: 20vh;
+  }
+  .card {
+    max-width: 180px;
+  }
+}
+</style>
+</head>
+<body>
+<button class="back" id="backBtn">← Back</button>
+<div class="menu" id="menu">
+
+  <!-- Logo -->
+  <div class="logo-wrapper" id="logoWrapper">
+    <video src="images/header.mp4" class="logo-video" autoplay muted></video>
+    <img src="images/header.png" class="logo-img" alt="X Arcade">
+  </div>
+
+  <!-- Typing lead -->
+  <p class="lead" id="lead">Choose a game:</p>
+
+  <!-- Game cards -->
+  <div class="choices" id="choices">
+    <button class="card" id="playPong">
+      <video src="images/pong.mp4" autoplay muted></video>
+      <img src="images/pong.png" alt="Pong">
+    </button>
+    <button class="card" id="playBandB">
+      <video src="images/bowsbombs.mp4" autoplay muted></video>
+      <img src="images/bowsbombs.png" alt="Bows & Bombs">
+    </button>
+  </div>
+
+</div>
+
+<iframe id="playerFrame" class="player" sandbox="allow-same-origin allow-scripts allow-forms"></iframe>
+
+<script>
+const logoWrapper = document.getElementById('logoWrapper');
+const logoVideo = logoWrapper.querySelector('.logo-video');
+const logoImg = logoWrapper.querySelector('.logo-img');
+const lead = document.getElementById('lead');
+const choices = document.getElementById('choices');
+const menu = document.getElementById('menu');
+const iframe = document.getElementById('playerFrame');
+const backBtn = document.getElementById('backBtn');
+
+// Sequence: center video → slide up → swap to png → typing → cards
+logoVideo.addEventListener('ended', () => {
+  // swap to PNG
+  logoVideo.style.display = 'none';
+  logoImg.style.display = 'block';
+
+  // slide logo up
+  setTimeout(() => {
+    logoWrapper.classList.add('to-top');
+
+    // show typing
+    setTimeout(() => {
+      lead.style.visibility = 'visible';
+      let i = 0;
+      const text = lead.textContent;
+      lead.textContent = '';
+      function type() {
+        if (i < text.length) {
+          lead.textContent += text.charAt(i);
+          i++;
+          setTimeout(type, 60);
+        } else {
+          lead.style.borderRight = 'none';
+          // show cards
+          setTimeout(() => {
+            choices.classList.add('show');
+            choices.querySelectorAll('.card').forEach(card => {
+              card.classList.add('show');
+              const vid = card.querySelector('video');
+              const img = card.querySelector('img');
+              vid.addEventListener('ended', () => {
+                vid.style.display = 'none';
+                img.style.display = 'block';
+              });
+            });
+          }, 400);
+        }
+      }
+      type();
+    }, 500);
+  }, 500);
+});
+
+// Open game
+function openGame(path) {
+  menu.style.display = 'none';
+  iframe.style.display = 'block';
+  backBtn.style.display = 'inline-block';
+  iframe.src = path;
+  window.scrollTo(0,0);
+}
+
+// Game click events
+document.getElementById('playPong').addEventListener('click', () => openGame('pong/index.html'));
+document.getElementById('playBandB').addEventListener('click', () => openGame('bandb/index.html'));
+
+// Back button
+backBtn.addEventListener('click', () => {
+  iframe.src = 'about:blank';
+  iframe.style.display = 'none';
+  backBtn.style.display = 'none';
+  menu.style.display = 'block';
+  window.scrollTo(0,0);
+});
+</script>
+</body>
+</html>
